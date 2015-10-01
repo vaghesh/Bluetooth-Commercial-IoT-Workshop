@@ -1,0 +1,12 @@
+{
+	"name": "EdgeDevice-Temperature",
+    "description": "Sample Bleno Module for BLuetooth communication between edge device and gateway to publish temperature data",
+	"version": "0.1.0",
+	"main": "main.js",
+	"engines": {
+		"node": ">=0.10.0"
+	},
+	"dependencies": {
+		"bleno":"*"
+	}
+}
