@@ -1,0 +1,12 @@
+{
+	"name": "EdgeDevice-LED",
+    "description": "Sample Bleno Module for Bluetooth communication between edge device and gateway to control LED",
+	"version": "0.1.0",
+	"main": "main.js",
+	"engines": {
+		"node": ">=0.10.0"
+	},
+	"dependencies": {
+		"bleno":"*"
+	}
+}
