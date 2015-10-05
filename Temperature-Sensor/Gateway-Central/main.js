@@ -3,7 +3,7 @@ var noble = require('noble');
 
 var ServiceName = 'temperature'
 var Service_UUID = 'ec00';
-var Temperature_UUID = 'ec01';
+var Characteristic_UUID = 'ec01';
 var TemperatureCharacteristic = null;
 var TemperatureValue = null;
 
@@ -47,7 +47,7 @@ function handleService(service){
         characteristics.forEach(function(characteristic){
             console.log('Found Characteristic:', characteristic.uuid);
             for(var i = 0, l = characteristics.length; i < l; i++) {
-                if (characteristics[i].uuid === Temperature_UUID){
+                if (characteristics[i].uuid === Characteristic_UUID){
                     TemperatureCharacteristic = characteristics[i];
                     setInterval(readTemperature,1000);
                     break;	
