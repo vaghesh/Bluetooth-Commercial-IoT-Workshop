@@ -1,84 +1,80 @@
-var bleno = require('bleno');
-var util = require('util');
-var groveSensor = require('jsupm_grove');
+
+var noble = require('noble');
+
+var ServiceName = 'temperature'
+var Service_UUID = 'ec00';
+var Temperature_UUID = 'ec01';
+var TemperatureCharacteristic = null;
+var TemperatureValue = null;
 
 
-var BlenoPrimaryService = bleno.PrimaryService;
-var BlenoCharacteristic = bleno.Characteristic;
-var BlenoDescriptor = bleno.Descriptor;
+noble.on('stateChange', function(state) {
+  if (state === 'poweredOn') {
+    noble.startScanning();
+  } else {
+    noble.stopScanning();
+  }
+});
 
 
-util.inherits(TemperatureReadCharacteristic, BlenoCharacteristic);
-util.inherits(TemperatureService,BlenoPrimaryService);
+noble.on('discover', function(peripheral) {
+    console.log("Peripheral Name is " +  peripheral.advertisement.localName)
+    if(peripheral.advertisement.localName == ServiceName){
+        peripheral.connect(function(error) {
+            if(error){
+                console.log(error);
+                return;
+            } 
+            peripheral.discoverServices([], function(error, services){
+                console.log('Services Discovered');
+                    for (var i =0, l = services.length; i < l; i++ ){
+                        console.log('Entered Services')
+                        var service = services[i];
+                        if (Service_UUID == service.uuid) {
+                            noble.stopScanning();
+                            console.log("Specific Service Found");
+                            handleService(service);
+                        }
+                    } 
+                });
+         });
+    }    
+});
 
 
-var temp = new groveSensor.GroveTemp(0);
-var temperatureValue = null;
-
-
-console.log('Edge Device for Temperature - Peripheral'); 
-
-
-bleno.on('stateChange', function(state) {
-    if (state == 'poweredOn') {
-        bleno.startAdvertising('temperature', [], function(err) {
-            if (err) {
-                console.log(err);
-            }
-            setInterval(checkTemperature, 100);
+function handleService(service){
+    service.discoverCharacteristics([], function(error, characteristics) {
+        characteristics.forEach(function(characteristic){
+            console.log('Found Characteristic:', characteristic.uuid);
+            for(var i = 0, l = characteristics.length; i < l; i++) {
+                if (characteristics[i].uuid === Temperature_UUID){
+                    TemperatureCharacteristic = characteristics[i];
+                    setInterval(readTemperature,1000);
+                    break;	
+                }
+            }     
         });
-    }
-    else {
-        bleno.stopAdvertising();
-    }
-});
-
-bleno.on('advertisingStart', function(err) {
-    if (!err) {
-        console.log('Advertising...');
-        bleno.setServices([
-            new TemperatureService()
-        ]);
-    }
-});
-
-
-function TemperatureService(){
-    TemperatureService.super_.call(this, {
-         uuid: 'ec00',
-        characteristics: [
-          new TemperatureReadCharacteristic()
-        ]
     });
 }
 
-function TemperatureReadCharacteristic(){
-    TemperatureReadCharacteristic.super_.call(this,{
-        uuid: 'ec01',
-        properties: ['read'],
-        descriptors: [
-            new BlenoDescriptor({
-                uuid: 'ec02',
-                value: 'Temperature Read'
-            })
-        ]
-    });
-}
-            
-TemperatureReadCharacteristic.prototype.onReadRequest = function(offset,callback){
-    if (offset){
-        callback(BlenoCharacteristic.RESULT_ATTR_NOT_LONG, null);
-    }
-    else{
-        if (null != temperatureValue){
-            var buffer = new Buffer(1);
-            buffer.writeUInt8(temperatureValue,0);
-            callback(BlenoCharacteristic.RESULT_SUCCESS, buffer);
+
+
+function readTemperature() {
+    TemperatureCharacteristic.read(function(error, data) {
+        if(error){
+            clearInterval(readTemperature);
+            console.log(error);
         }
-    }
-};
-
-
-function checkTemperature(){
-    temperatureValue = temp.value(); // Temp in Celcius
+    });    
+    TemperatureCharacteristic.once('read', function(value, isNotification) {
+        TemperatureValue = value.readUInt8(0);
+        console.log ("Temperature Value is "  + TemperatureValue)
+        
+	}); 
 }
+
+
+noble.on('disconnect', function() {
+        console.log('Trying to reconnect');
+        noble.startScanning();
+});
