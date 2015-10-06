@@ -20,6 +20,7 @@ noble.on('stateChange', function(state) {
 noble.on('discover', function(peripheral) {
     console.log("Peripheral Name is " +  peripheral.advertisement.localName)
     if(peripheral.advertisement.localName == ServiceName){
+		noble.stopScanning();
         peripheral.connect(function(error) {
             if(error){
                 console.log(error);
